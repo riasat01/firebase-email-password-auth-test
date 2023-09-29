@@ -1,19 +1,22 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "firebase/auth";
+import { useState } from "react";
 import auth from "../../firebase/firebase.config";
 import Update from "../../components/update/Update";
 import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai'
+import { Link } from "react-router-dom";
 
 const Register = () => {
 
     const [email, setEmail] = useState(``);
     const [password, setPassword] = useState(``);
     const [registratiionError, setRegistrationError] = useState(``);
-    const [success, setSuccess] = useState(false);
+    const [success, setSuccess] = useState(``);
     const [passVisible, setPassVisible] = useState(false);
+    const [name, setName] = useState(``);
 
     const handleSubmit = e => {
         e.preventDefault();
+        setName(e.target.name.value);
         console.log(e.target.email.value, e.target.password.value);
         setEmail(e.target.email.value);
         setPassword(e.target.password.value);
@@ -33,7 +36,7 @@ const Register = () => {
         } else if (!/[!,@,#,%,^,&,*]/.test(password)) {
             setRegistrationError(`Password must contain at least one of these "!,@,#,%,^,&,*" characters`);
             return;
-        }else if(!e.target.radio.checked){
+        } else if (!e.target.radio.checked) {
             setRegistrationError(`Please checke our terms and conditions`);
             return;
         }
@@ -41,12 +44,27 @@ const Register = () => {
         createUserWithEmailAndPassword(auth, email, password)
             .then(userCredintial => {
                 console.log(userCredintial.user);
+
+                updateProfile(auth.currentUser, {
+                    displayName: name, photoURL: "https://example.com/jane-q-user/profile.jpg"
+                  }).then(() => {
+                    // Profile updated!
+                    // ...
+                  }).catch((error) => {
+                    // An error occurred
+                    // ...
+                  });
+
+                sendEmailVerification(auth.currentUser)
+                    .then(() => {
+                        alert(`Please check your email and verify`)
+                    });
                 setRegistrationError(``);
-                setSuccess(true);
+                setSuccess(`Successfully registered`);
             })
             .catch(error => {
                 console.log(error.message);
-                setSuccess(false);
+                setSuccess(``);
                 setRegistrationError(error.message)
             })
     }
@@ -58,6 +76,12 @@ const Register = () => {
                 <Update registratiionError={registratiionError} success={success}></Update>
 
                 <form onSubmit={handleSubmit}>
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text">Name</span>
+                        </label>
+                        <input type="name" name="name" placeholder="name" className="input input-bordered" />
+                    </div>
                     <div className="form-control">
                         <label className="label">
                             <span className="label-text">Email</span>
@@ -77,16 +101,17 @@ const Register = () => {
                                 passVisible ? <AiFillEyeInvisible></AiFillEyeInvisible> : <AiFillEye></AiFillEye>
                             }
                         </section>
-                    <div className="">
-                        <input type="checkbox" name="radio" id="radio" />
-                        <label htmlFor="">Please except our terms and conditions</label>
-                    </div>
+                        <div className="">
+                            <input type="checkbox" name="radio" id="radio" />
+                            <label htmlFor="">Please except our terms and conditions</label>
+                        </div>
                     </div>
                     <div className={`form-control mt-6`}>
                         <button className="btn btn-primary w-full" >Register</button>
                     </div>
                 </form>
             </div>
+            <Link to={`/login`}><p>Already has an accoount? Please Log in</p></Link>
         </div>
     );
 };
